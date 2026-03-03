@@ -1,0 +1,65 @@
+{
+  "projectType": "frontend",
+  "projectName": "The Incel Test",
+  "projectDescription": "An interactive quiz that determines if you're a Chad or a Beta based on looks and personality questions.",
+  "theme": "almond",
+  "primaryColor": "#007bff",
+  "lightColor": "#92D9F8",
+  "darkColor": "#007bff",
+  "navigation": {
+    "groups": [
+      {
+        "group": "Overview",
+        "pages": [
+          "introduction",
+          "how-it-works"
+        ]
+      },
+      {
+        "group": "Quiz Structure",
+        "pages": [
+          "questions/question-categories",
+          "questions/scoring-algorithm"
+        ]
+      },
+      {
+        "group": "Results",
+        "pages": [
+          "results/result-types",
+          "results/visualization"
+        ]
+      },
+      {
+        "group": "Technical Details",
+        "pages": [
+          "technical/question-schema",
+          "technical/javascript-implementation"
+        ]
+      },
+      {
+        "group": "Additional Info",
+        "pages": [
+          "faq",
+          "contributors"
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Two-dimensional scoring system (looks vs personality)",
+    "29 weighted questions with dynamic answer options",
+    "Interactive SVG visualization chart",
+    "Four distinct result categories with detailed descriptions",
+    "JSON-based question configuration",
+    "Real-time progress tracking"
+  ],
+  "publicApiSurface": [
+    "loadQuestion(questionId)",
+    "logAnswer(answerId)",
+    "calcScore(answer, options)",
+    "moveDot(xOffset, yOffset)",
+    "finale()",
+    "questions.json - Question data structure",
+    "schema.json - JSON schema for question validation"
+  ]
+}
