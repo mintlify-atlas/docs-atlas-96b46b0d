@@ -1,0 +1,243 @@
+---
+title: Question Categories
+description: Understanding the two types of questions in The Incel Test - looks-based and personality-based questions, with examples and weighting system
+---
+
+The Incel Test uses two distinct categories of questions to assess users across different dimensions: **looks-based questions** and **personality-based questions**. Each question belongs to one of these categories and contributes to a separate score that determines the user's final position on the Chad-Beta spectrum.
+
+## Question Structure
+
+Each question in `questions.json` follows this structure:
+
+```json
+{
+  "prompt": "Question text",
+  "isLooks": true,
+  "weight": 1,
+  "answers": [
+    "Answer option 1",
+    "Answer option 2",
+    "Answer option 3",
+    "Answer option 4",
+    "Answer option 5"
+  ]
+}
+```
+
+### Properties
+
+- **prompt**: The question text displayed to the user
+- **isLooks**: Boolean flag determining the category (`true` for looks, `false` for personality)
+- **weight**: Numerical weight (1-5) indicating the question's importance in scoring
+- **answers**: Array of answer options (2-5 choices)
+
+## Looks-Based Questions
+
+Looks-based questions assess physical attributes and appearance. These questions have `"isLooks": true` and cover aspects like body type, facial features, and style choices.
+
+<Accordion title="Example: Jawline Question">
+```json
+{
+  "prompt": "Describe your jaw",
+  "isLooks": true,
+  "weight": 1,
+  "answers": [
+    "Pronounced jawline visible from a distance",
+    "Reasonably nice jaw",
+    "Average",
+    "Rounded from all angles",
+    "No jaw definition whatsoever"
+  ]
+}
+```
+
+This question has 5 answer options ranging from ideal to least desirable, with a standard weight of 1.
+</Accordion>
+
+<Accordion title="Example: Height Question">
+```json
+{
+  "prompt": "What is your height in feet?",
+  "isLooks": true,
+  "weight": 2,
+  "answers": [
+    "over 6′2″ (188 cm)",
+    "6′0″ – 6′2″ (183 – 187 cm)",
+    "5′10″ – 6′0″ (178 – 182 cm)",
+    "5′8″ – 5′10″ (172 – 177 cm)",
+    "shorter than 5′8″ (171 cm)"
+  ]
+}
+```
+
+Height has a **weight of 2**, making it twice as influential as standard questions in the looks score.
+</Accordion>
+
+<Accordion title="Example: Athletic Build Question">
+```json
+{
+  "prompt": "How athletic is your build?",
+  "isLooks": true,
+  "weight": 2,
+  "answers": [
+    "Prison muscle",
+    "Some muscle definition",
+    "Not chubby, no muscle definition",
+    "Skinny or chubby",
+    "Fat or emaciated"
+  ]
+}
+```
+
+Another high-weight question (weight: 2) focusing on body composition.
+</Accordion>
+
+<Accordion title="Example: Binary Looks Question">
+```json
+{
+  "prompt": "Do you have facial acne?",
+  "isLooks": true,
+  "weight": 1,
+  "answers": [
+    "No",
+    "Yes"
+  ]
+}
+```
+
+Some looks questions are binary (2 options) with standard weight.
+</Accordion>
+
+## Personality-Based Questions
+
+Personality-based questions assess behaviors, interests, and social characteristics. These questions have `"isLooks": false` and evaluate lifestyle choices and social engagement.
+
+<Accordion title="Example: Anime Viewing Habits">
+```json
+{
+  "prompt": "Have you watched anime?",
+  "isLooks": false,
+  "weight": 2,
+  "answers": [
+    "I've never seen anime",
+    "I've only seen a couple minutes of an anime",
+    "I've seen around one episode of anime",
+    "I've seen several episodes of anime",
+    "I've finished more than one anime series"
+  ]
+}
+```
+
+This question has a weight of 2, indicating anime viewing is considered significant for personality assessment.
+</Accordion>
+
+<Accordion title="Example: Social Activity">
+```json
+{
+  "prompt": "How often do you party?",
+  "isLooks": false,
+  "weight": 1,
+  "answers": [
+    "I'm never sober",
+    "2-4 times a week",
+    "1-2 times a week",
+    "1, but hiding in the corner the whole time",
+    "0"
+  ]
+}
+```
+
+Social engagement questions help assess personality traits.
+</Accordion>
+
+<Accordion title="Example: Sexual Experience (Highest Weight)">
+```json
+{
+  "prompt": "Have you ever had sex?",
+  "isLooks": false,
+  "weight": 5,
+  "answers": [
+    "Yes",
+    "No"
+  ]
+}
+```
+
+This binary question has the **highest weight of 5**, making it the most influential personality question in the entire quiz.
+</Accordion>
+
+<Accordion title="Example: Pornography Consumption">
+```json
+{
+  "prompt": "When you beat off, what do you whack it to?",
+  "isLooks": false,
+  "weight": 3,
+  "answers": [
+    "I only jerk it to the memories of my past sexual experiences",
+    "I jerk it to my imagination, or I dont pull my pud at all",
+    "Pornhub/Brazzers",
+    "Hentai",
+    "Trap Hentai"
+  ]
+}
+```
+
+This question has a weight of 3, making it highly influential in the personality score.
+</Accordion>
+
+## Weighting System
+
+The weighting system allows certain questions to have more influence on the final score:
+
+- **Weight 1**: Standard questions (most common)
+- **Weight 2**: Important questions (e.g., height, athletic build, anime viewing)
+- **Weight 3**: Very important questions (e.g., pornography preferences)
+- **Weight 5**: Critical questions (e.g., sexual experience)
+
+### How Weights Work
+
+Weights are applied during score calculation in the `calcScore()` function:
+
+```javascript
+function calcScore(answer, options) {
+    n = options / 2;
+    if ((options % 2) != 0) {
+        console.log("│  Odd number of answers.")
+        if (answer < ((options + 1) / 2)) {
+            return calcScore(answer, options + 1);
+        } else {
+            return calcScore(answer + 1, options + 1);
+        }
+    }
+    console.log("│  Even number of answers.")
+    return ((answer - n) / n) * currentWeight;
+}
+```
+
+The calculated score is multiplied by `currentWeight`, meaning a question with weight 2 has twice the impact of a weight 1 question.
+
+### Weight Distribution
+
+As questions are loaded, the system tracks separate weight totals for each category:
+
+```javascript
+if (isLooks) {
+    console.log("│  Question " + questionId + " is about looks.");
+    looksCount += currentWeight;
+} else {
+    console.log("│  Question " + questionId + " is about personality.");
+    personalityCount += currentWeight;
+}
+```
+
+These totals (`looksCount` and `personalityCount`) are used to normalize scores in the final calculation.
+
+## Question Distribution
+
+From the `questions.json` file:
+
+- **Looks questions**: 14 questions covering physical attributes
+- **Personality questions**: 15 questions covering behaviors and interests
+- **Total questions**: 29
+
+The test provides a balanced assessment across both dimensions, with each contributing equally to the final classification.

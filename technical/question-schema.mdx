@@ -1,0 +1,141 @@
+---
+title: Question Schema
+description: JSON schema specification for The Incel Test question format
+---
+
+The Incel Test uses a JSON schema to define the structure of questions. All questions must conform to this schema, which is defined in `schema.json`.
+
+## Schema Overview
+
+The schema defines an array of question objects. Each question contains a prompt, categorization, weighting, and a list of possible answers.
+
+```json
+{
+    "$schema": "http://json-schema.org/draft-06/schema#",
+    "title": "Question list",
+    "type": "array",
+    "items": {
+        "title": "Question",
+        "type": "object",
+        "properties": {
+            "prompt": {
+                "description": "The question prompt served to the user",
+                "type": "string"
+            },
+            "isLooks": {
+                "description": "Whether the question is about looks (true) or personality (false)",
+                "type": "boolean"
+            },
+            "weight": {
+                "type": "number",
+                "description": "How heavily to weight the question",
+                "exclusiveMinimum": 0
+            },
+            "answers": {
+                "type": "array",
+                "description": "A set of answers to the prompt",
+                "items": {
+                    "title": "Answer",
+                    "description": "A potential answer",
+                    "type": "string"
+                },
+                "minItems": 2,
+                "uniqueItems": true
+            }
+        },
+        "required": ["prompt", "isLooks", "weight", "answers"]
+    },
+    "minItems": 1,
+    "uniqueItems": true
+}
+```
+
+## Question Object Properties
+
+<ParamField path="prompt" type="string" required>
+  The question prompt served to the user. This is the text that appears as the question.
+</ParamField>
+
+<ParamField path="isLooks" type="boolean" required>
+  Whether the question is about looks (`true`) or personality (`false`). This determines which axis of the scoring chart the question affects.
+  
+  - `true`: Question affects the "Looks" score (vertical axis)
+  - `false`: Question affects the "Personality" score (horizontal axis)
+</ParamField>
+
+<ParamField path="weight" type="number" required>
+  How heavily to weight the question in the final score calculation. Must be greater than 0.
+  
+  Higher weights make the question more impactful on the final result. The weight is used as a multiplier in the scoring algorithm.
+</ParamField>
+
+<ParamField path="answers" type="array" required>
+  A set of possible answers to the prompt. Each answer is a string.
+  
+  **Constraints:**
+  - Minimum 2 answers required
+  - All answers must be unique
+  - Answers are displayed as buttons in the order they appear
+</ParamField>
+
+## Array-Level Constraints
+
+- The question list must contain at least 1 question
+- All questions in the array must be unique
+
+## Example Question Object
+
+Here's an example of a valid question object:
+
+```json
+{
+  "prompt": "How would you describe your physical fitness?",
+  "isLooks": true,
+  "weight": 1.5,
+  "answers": [
+    "I'm in great shape and work out regularly",
+    "I'm moderately active",
+    "I don't exercise much",
+    "I avoid physical activity"
+  ]
+}
+```
+
+## Complete Example
+
+A complete questions file with multiple questions:
+
+```json
+[
+  {
+    "prompt": "How would you describe your physical fitness?",
+    "isLooks": true,
+    "weight": 1.5,
+    "answers": [
+      "I'm in great shape and work out regularly",
+      "I'm moderately active",
+      "I don't exercise much",
+      "I avoid physical activity"
+    ]
+  },
+  {
+    "prompt": "How do you handle social situations?",
+    "isLooks": false,
+    "weight": 2.0,
+    "answers": [
+      "I'm comfortable and confident",
+      "I manage but feel awkward sometimes",
+      "I prefer to avoid them"
+    ]
+  }
+]
+```
+
+## Validation
+
+The schema uses JSON Schema Draft 06 specification. Questions are validated against this schema to ensure:
+
+- All required fields are present
+- Data types are correct
+- Constraints are met (minimum items, uniqueness, etc.)
+- Numeric values are within valid ranges

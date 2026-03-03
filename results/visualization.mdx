@@ -1,0 +1,257 @@
+---
+title: Visualization
+description: How The Incel Test displays results using an interactive SVG chart
+---
+
+The Incel Test uses an SVG-based chart to visualize user results on a two-dimensional grid representing personality and looks scores.
+
+## Chart Overview
+
+The visualization is a **543×591px SVG chart** (`chad_chart.svg`) divided into four colored quadrants:
+
+- **Top-left** (Orange): Beta Chad - Beta personality, Chad looks
+- **Top-right** (Green): Chad Chad - Chad personality, Chad looks  
+- **Bottom-left** (Red): Beta Beta - Beta personality, Beta looks
+- **Bottom-right** (Blue): Chad Beta - Chad personality, Beta looks
+
+## Coordinate System
+
+The chart uses SVG coordinates with the origin at the **center of the chart**:
+
+```
+  Chad Looks (top)
+       |
+       |  Green    Orange
+       |  (Chad    (Beta
+       |   Chad)   Chad)
+Beta --|---------- Chad
+Personality    Personality
+       |
+       |  Blue     Red
+       |  (Chad    (Beta
+       |   Beta)   Beta)
+       |
+  Beta Looks (bottom)
+```
+
+### Key Coordinates
+
+- **Chart dimensions**: 543px wide × 591px tall
+- **Quadrant size**: 253.817px × 253.817px each
+- **Center point**: (271.097, 293.291)
+- **Vertical axis**: x = 271.097 (personality axis)
+- **Horizontal axis**: y = 293.291 (looks axis)
+
+### Coordinate Ranges
+
+Scores are normalized and mapped to the chart:
+
+<Tabs>
+  <Tab title="Personality (X-axis)">
+    - **Range**: -253 to +253
+    - **Beta personality**: Negative values (left side)
+    - **Chad personality**: Positive values (right side)
+    - **Note**: The raw personality score is inverted with `-1 *` before visualization
+  </Tab>
+  
+  <Tab title="Looks (Y-axis)">
+    - **Range**: -253 to +253  
+    - **Chad looks**: Negative values (top side)
+    - **Beta looks**: Positive values (bottom side)
+    - **Note**: In SVG, Y increases downward, so negative = up (Chad)
+  </Tab>
+</Tabs>
+
+## Score Normalization
+
+Before visualization, raw scores are scaled to fit the chart dimensions:
+
+```javascript
+// Scale scores to chart dimensions
+var personalityFinal = -1 * personality * (253 / personalityCount)
+console.log("│  Final personality: " + personalityFinal);
+
+var looksFinal = looks * (253 / looksCount)
+console.log("│  Final looks: " + looksFinal);
+```
+
+**Location**: `questioner.js:130-133`
+
+The scaling formula:
+- Takes the raw accumulated score
+- Divides by the total possible weight for that dimension
+- Multiplies by 253 to fit the quadrant size
+- Personality is inverted (`-1 *`) to match the coordinate system
+
+## The `moveDot()` Function
+
+The core visualization function moves a red dot indicator to the user's score position:
+
+```javascript
+function moveDot(xOffset, yOffset) {
+    //var chart = document.getElementById("chart");
+    //var doc = (chart.contentDocument) ? chart.contentDocument : chart.contentWindow.document;
+    var dot = document.getElementById("pinpoint");
+
+    if (dot) {
+        var transformAttr = ' translate(' + xOffset + ',' + yOffset + ')';
+        dot.setAttribute('transform', transformAttr);
+    }
+}
+```
+
+**Location**: `questioner.js:193-202`
+
+### How It Works
+
+<Steps>
+  <Step title="Get the pinpoint element">
+    Retrieves the SVG circle element with ID `pinpoint` from the DOM.
+  </Step>
+  
+  <Step title="Build transform string">
+    Creates an SVG `translate()` transform using the calculated offsets:
+    ```javascript
+    var transformAttr = ' translate(' + xOffset + ',' + yOffset + ')';
+    ```
+  </Step>
+  
+  <Step title="Apply transformation">
+    Sets the `transform` attribute on the dot element, moving it relative to its original center position.
+  </Step>
+</Steps>
+
+### Usage Example
+
+The function is called in the `finale()` function after scores are calculated:
+
+```javascript
+moveDot((personalityFinal), (looksFinal));
+$("#chart").removeAttr('hidden');
+```
+
+**Location**: `questioner.js:135-136`
+
+<Note>
+The chart is initially hidden with the `hidden` attribute and only revealed after the dot has been positioned to the final score.
+</Note>
+
+## The Pinpoint Indicator
+
+The red dot that shows your position is defined in the SVG:
+
+```xml
+<path
+   d="m 284.01105,293.30798 c 0,6.67798 -5.41357,12.09155 -12.09157,12.09155 -6.67796,0 -12.09155,-5.41357 -12.09155,-12.09155 0,-6.678 5.41359,-12.09157 12.09155,-12.09157 6.678,0 12.09157,5.41357 12.09157,12.09157 z"
+   id="pinpoint"
+   style="opacity:0.75;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.59840477;stroke-linecap:square;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+   inkscape:connector-curvature="0"
+   inkscape:label="#pinpoint">
+  <title id="title901">Your chad score</title>
+</path>
+```
+
+**Location**: `chad_chart.svg:307-313`
+
+### Pinpoint Properties
+
+- **Radius**: ~12px
+- **Default position**: Near the center (284, 293)
+- **Color**: Red (`#ff0000`)
+- **Opacity**: 75%
+- **Stroke**: Black border
+
+## Mapping Examples
+
+<CardGroup cols={2}>
+  <Card title="Perfect Beta Beta" icon="arrow-down-left" color="#ff1616">
+    **Scores**: personality = -253, looks = +253
+    
+    **Position**: Bottom-left corner
+    
+    **Transform**: `translate(-253, 253)`
+  </Card>
+  
+  <Card title="Perfect Chad Chad" icon="arrow-up-right" color="#75c03b">
+    **Scores**: personality = +253, looks = -253
+    
+    **Position**: Top-right corner
+    
+    **Transform**: `translate(253, -253)`
+  </Card>
+  
+  <Card title="Balanced Score" icon="crosshairs" color="#888888">
+    **Scores**: personality = 0, looks = 0
+    
+    **Position**: Dead center
+    
+    **Transform**: `translate(0, 0)`
+  </Card>
+  
+  <Card title="Beta Chad" icon="arrow-up-left" color="#ff7d00">
+    **Scores**: personality = -126, looks = -126
+    
+    **Position**: Top-left quadrant center
+    
+    **Transform**: `translate(-126, -126)`
+  </Card>
+</CardGroup>
+
+## Chart Labels and Axes
+
+The SVG includes text labels for orientation:
+
+- **Horizontal axis labels**: "Beta Personality" (left) and "Chad Personality" (right)
+- **Vertical axis labels**: "Chad Looks" (top) and "Beta Looks" (bottom)
+- **Quadrant labels**: Each quadrant displays its result type (e.g., "Beta Beta", "Chad Chad")
+
+### Axis Lines
+
+The chart features prominent black axis lines:
+
+```xml
+<!-- Vertical axis (personality) -->
+<path id="path3210" fill="#010101" 
+      d="M271.097,25.229v536.156h2V25.229H271.097z" />
+
+<!-- Horizontal axis (looks) -->
+<path id="path3416" fill="#010101" 
+      d="M4.003,292.291v2h536.156v-2H4.003z" />
+```
+
+Both axes include arrow indicators pointing toward the "Chad" directions.
+
+## Integration with Results
+
+The visualization workflow:
+
+<Steps>
+  <Step title="User completes quiz">
+    All questions answered, raw scores accumulated.
+  </Step>
+  
+  <Step title="Scores normalized">
+    The `finale()` function scales scores to chart dimensions.
+  </Step>
+  
+  <Step title="Dot positioned">
+    `moveDot()` translates the pinpoint to the calculated position.
+  </Step>
+  
+  <Step title="Chart revealed">
+    The hidden attribute is removed, displaying the chart.
+  </Step>
+  
+  <Step title="Result card shown">
+    The appropriate result description appears based on quadrant.
+  </Step>
+</Steps>
+
+<Tip>
+The chart is embedded directly in the HTML (not loaded as an external file) to ensure the `pinpoint` element is immediately accessible for manipulation.
+</Tip>
+
+## Related
+
+- [Result Types](/results/result-types) - Understanding the four archetypes
+- [Scoring Algorithm](/questions/scoring-algorithm) - How raw scores are calculated

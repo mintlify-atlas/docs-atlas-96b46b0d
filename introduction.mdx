@@ -1,0 +1,140 @@
+---
+title: Introduction
+description: The most important question - are you a Chad or a Beta? A satirical quiz that evaluates your looks and personality on a two-dimensional scale.
+---
+
+<img
+  className="block dark:hidden"
+  src="/images/hero-light.svg"
+  alt="Hero Light"
+/>
+<img
+  className="hidden dark:block"
+  src="/images/hero-dark.svg"
+  alt="Hero Dark"
+/>
+
+## Welcome to The Incel Test
+
+The Incel Test is a satirical quiz that answers life's most pressing question: **Are you a Chad or a Beta?**
+
+This human-subjects survey was rejected by the Denison University IRB, and for good reason. It evaluates users across two critical dimensions - looks and personality - to place them on a quadrant chart ranging from "Beta Beta" (the worst) to "Chad Chad" (living life on easy mode).
+
+<Note>
+  This is a satirical project. The quiz uses deliberately offensive humor and stereotypes for comedic effect.
+</Note>
+
+## What Makes This Quiz Unique?
+
+Unlike simple personality quizzes, The Incel Test recognizes that people are multidimensional. The scoring system evaluates:
+
+- **Looks**: Physical attributes like jawline, height, build, facial symmetry, and fashion sense
+- **Personality**: Social behaviors, hobbies, relationship history, and lifestyle choices
+
+Your answers determine where you land on a 2D chart with four possible outcomes:
+
+<CardGroup cols={2}>
+  <Card
+    title="Beta Beta"
+    icon="face-frown"
+    color="#dc3545"
+  >
+    Both looks and personality score low. The quiz delivers brutally satirical feedback about your prospects.
+  </Card>
+  <Card
+    title="Beta Chad"
+    icon="dumbbell"
+    color="#ffc107"
+  >
+    Good looks but poor personality. You hit the gym but can't hide your interests in anime.
+  </Card>
+  <Card
+    title="Chad Beta"
+    icon="beer-mug-empty"
+    color="#17a2b8"
+  >
+    Great personality but average looks. Your chad-ness will carry you through life.
+  </Card>
+  <Card
+    title="Chad Chad"
+    icon="crown"
+    color="#28a745"
+  >
+    Maximum looks and personality. You naturally smell like Old Spice and life is on easy mode.
+  </Card>
+</CardGroup>
+
+## The Quiz Experience
+
+The quiz consists of **30 questions** split between looks and personality:
+
+- **14 looks questions**: Covering physical attributes from jawline to shoe choice
+- **16 personality questions**: Evaluating social life, hobbies, and lifestyle
+
+Each question has weighted importance, with critical questions (like "Have you ever had sex?") carrying 5x the weight of standard questions.
+
+<Info>
+  The quiz tracks your answers in real-time, displaying them in a sidebar as you progress through the questions.
+</Info>
+
+## Technical Implementation
+
+The Incel Test is built with:
+
+- **Vanilla JavaScript** (`questioner.js`) handling all quiz logic
+- **JSON-based questions** (`questions.json`) with 30 questions and weighted scoring
+- **Bootstrap 4** for responsive UI
+- **SVG chart visualization** showing your final position on the Chad-Beta matrix
+
+See the [How It Works](/how-it-works) page for detailed information about the scoring algorithm and question weighting system.
+
+## Quick Start
+
+<CardGroup cols={2}>
+  <Card
+    title="How It Works"
+    icon="gears"
+    href="/how-it-works"
+  >
+    Learn about the two-dimensional scoring system and how results are calculated
+  </Card>
+  <Card
+    title="Question Structure"
+    icon="clipboard-question"
+    href="/questions/question-categories"
+  >
+    Explore the 30 questions and their weights in the quiz
+  </Card>
+  <Card
+    title="Results Explained"
+    icon="chart-simple"
+    href="/results/result-types"
+  >
+    Understand the four quadrants and what each result means
+  </Card>
+  <Card
+    title="Technical Implementation"
+    icon="code"
+    href="/technical/javascript-implementation"
+  >
+    Dive into the technical implementation
+  </Card>
+</CardGroup>
+
+## FAQ
+
+<AccordionGroup>
+  <Accordion title="Why does the quiz use two axes?">
+    As stated in the FAQ: "lmfao if you think looks or personality are the only thing that matters. People are multidimensional."
+    
+    The two-axis system allows for more nuanced results than a single score.
+  </Accordion>
+  
+  <Accordion title="How does the scoring work?">
+    The quiz uses weighted scoring where each question has a weight (1-5). Answers are scored from -1 to +1, multiplied by the weight, then normalized to fit on a 253x253 pixel chart. See the [How It Works](/how-it-works) page for details.
+  </Accordion>
+  
+  <Accordion title="Can I contribute?">
+    The original quiz is a static satirical project. This documentation serves as a technical reference for understanding how it was built.
+  </Accordion>
+</AccordionGroup>

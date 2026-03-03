@@ -1,0 +1,258 @@
+---
+title: Scoring Algorithm
+description: Deep dive into how The Incel Test calculates scores - the calcScore() function, answer normalization, scaling formulas, and final score computation
+---
+
+The Incel Test uses a sophisticated scoring algorithm to convert user answers into two normalized scores (looks and personality) that determine their final classification on the Chad-Beta spectrum.
+
+## Score Calculation Flow
+
+1. User selects an answer
+2. Answer is normalized using `calcScore()` function
+3. Normalized score is multiplied by question weight
+4. Weighted score is added to looks or personality total
+5. After all questions, totals are scaled to ±253 range
+6. Final coordinates determine classification
+
+## The calcScore() Function
+
+The core scoring logic normalizes answers to a range where better answers produce positive scores and worse answers produce negative scores.
+
+```javascript
+function calcScore(answer, options) {
+    n = options / 2;
+    if ((options % 2) != 0) {
+        console.log("│  Odd number of answers.")
+        if (answer < ((options + 1) / 2)) {
+            return calcScore(answer, options + 1);
+        } else {
+            return calcScore(answer + 1, options + 1);
+        }
+    }
+    console.log("│  Even number of answers.")
+    return ((answer - n) / n) * currentWeight;
+}
+```
+
+### How It Works
+
+#### Even Number of Answers
+
+For questions with an even number of answers (2, 4, 6, etc.), the formula is straightforward:
+
+```
+score = ((answer - n) / n) * weight
+```
+
+Where:
+- `answer` = selected answer index (0-based)
+- `n` = options / 2
+- `weight` = question weight
+
+**Example: 4-answer question with weight 2**
+
+```
+n = 4 / 2 = 2
+
+Answer 0: ((0 - 2) / 2) * 2 = -2
+Answer 1: ((1 - 2) / 2) * 2 = -1
+Answer 2: ((2 - 2) / 2) * 2 = 0
+Answer 3: ((3 - 2) / 2) * 2 = 1
+```
+
+#### Odd Number of Answers
+
+For questions with odd answers (3, 5, etc.), the algorithm recursively adjusts by treating them as if they had one more answer:
+
+```javascript
+if (answer < ((options + 1) / 2)) {
+    return calcScore(answer, options + 1);
+} else {
+    return calcScore(answer + 1, options + 1);
+}
+```
+
+This ensures symmetric scoring around zero.
+
+**Example: 5-answer question with weight 1**
+
+```
+options = 5, middle = (5 + 1) / 2 = 3
+
+Answer 0: answer < 3, so calcScore(0, 6)
+  → n = 3, score = ((0 - 3) / 3) * 1 = -1
+
+Answer 1: answer < 3, so calcScore(1, 6)
+  → n = 3, score = ((1 - 3) / 3) * 1 = -0.667
+
+Answer 2: answer < 3, so calcScore(2, 6)
+  → n = 3, score = ((2 - 3) / 3) * 1 = -0.333
+
+Answer 3: answer >= 3, so calcScore(4, 6)
+  → n = 3, score = ((4 - 3) / 3) * 1 = 0.333
+
+Answer 4: answer >= 3, so calcScore(5, 6)
+  → n = 3, score = ((5 - 3) / 3) * 1 = 0.667
+```
+
+Note: There's no middle neutral answer - the algorithm creates a slight asymmetry by skipping the zero value.
+
+## Answer Logging and Accumulation
+
+When a user selects an answer, the score is calculated and added to the appropriate category:
+
+```javascript
+function logAnswer(answerId) {
+    // ... UI updates ...
+
+    var score = calcScore(answerId, numAnswers);
+    console.log("│  Raw score:" + score + ".");
+    if (isLooks) {
+        looks += score;
+        console.log("│  Looks value is now " + looks + ".");
+    } else {
+        personality += score;
+        console.log("│  Personality value is now " + personality + ".");
+    }
+
+    loadQuestion(questionNum + 1);
+}
+```
+
+### Global Score Variables
+
+```javascript
+var personality = 0;      // Accumulated personality score
+var personalityCount = 0; // Sum of personality question weights
+var looks = 0;            // Accumulated looks score
+var looksCount = 0;       // Sum of looks question weights
+```
+
+As questions are loaded, the weight totals are tracked:
+
+```javascript
+if (isLooks) {
+    looksCount += currentWeight;
+} else {
+    personalityCount += currentWeight;
+}
+```
+
+## Final Score Scaling
+
+After all questions are answered, the accumulated scores are normalized to a ±253 coordinate system:
+
+```javascript
+function finale() {
+    // Scale scores
+    var personalityFinal = -1 * personality * (253 / personalityCount)
+    console.log("│  Final personality: " + personalityFinal);
+    var looksFinal = looks * (253 / looksCount)
+    console.log("│  Final looks: " + looksFinal);
+
+    moveDot((personalityFinal), (looksFinal));
+    // ...
+}
+```
+
+### Scaling Formula
+
+**Looks Score:**
+```
+looksFinal = looks * (253 / looksCount)
+```
+
+**Personality Score:**
+```
+personalityFinal = -1 * personality * (253 / personalityCount)
+```
+
+### Why 253?
+
+The magic number `253` scales scores to fit within the visual coordinate system of the results chart. This ensures all possible score combinations fit within the defined quadrants.
+
+### Why Negate Personality?
+
+The personality score is multiplied by `-1` to create the correct visual mapping:
+
+- **Positive personality scores** (better answers) → **negative X coordinates** (left side)
+- **Negative personality scores** (worse answers) → **positive X coordinates** (right side)
+
+This creates the intended quadrant layout:
+
+```
+        Chad Beta          Chad Chad
+     (good looks,      (good looks,
+    bad personality)   good personality)
+            │
+            │
+  ─────────┼─────────
+            │
+            │
+        Beta Beta          Beta Chad
+     (bad looks,        (bad looks,
+    bad personality)    good personality)
+```
+
+## Complete Example Calculation
+
+### Question Set Example
+
+**Question 1: Height (looks, weight 2)**
+- User selects answer 4 (shortest option)
+- Options: 5 answers
+- `calcScore(4, 5)` → converts to `calcScore(5, 6)`
+- Score: `((5 - 3) / 3) * 2 = 1.333`
+- `looks += 1.333` → looks = 1.333
+- `looksCount += 2` → looksCount = 2
+
+**Question 2: Have you had sex? (personality, weight 5)**
+- User selects answer 1 (No)
+- Options: 2 answers
+- `calcScore(1, 2)`
+- Score: `((1 - 1) / 1) * 5 = 0`
+- `personality += 0` → personality = 0
+- `personalityCount += 5` → personalityCount = 5
+
+**Question 3: Facial acne (looks, weight 1)**
+- User selects answer 1 (Yes)
+- Options: 2 answers
+- `calcScore(1, 2)`
+- Score: `((1 - 1) / 1) * 1 = 0`
+- `looks += 0` → looks = 1.333
+- `looksCount += 1` → looksCount = 3
+
+### Final Calculation
+
+```javascript
+looksFinal = 1.333 * (253 / 3) = 112.4
+personalityFinal = -1 * 0 * (253 / 5) = 0
+```
+
+**Result:** Position (0, 112.4) - Center-right of the chart, indicating bad looks with neutral personality.
+
+## Classification Logic
+
+Based on the final coordinates, users are classified into five categories:
+
+```javascript
+if (personalityFinal == 0 && looksFinal == 0) {
+    // Exactly center: "Jared Fogle"
+} else if (personalityFinal <= 0 && looksFinal >= 0) {
+    // Top-left quadrant: "Beta Beta"
+} else if (personalityFinal <= 0 && looksFinal <= 0) {
+    // Bottom-left quadrant: "Beta Chad"
+} else if (personalityFinal >= 0 && looksFinal >= 0) {
+    // Top-right quadrant: "Chad Beta"
+} else if (personalityFinal > 0 && looksFinal < 0) {
+    // Bottom-right quadrant: "Chad Chad"
+}
+```
+
+## Key Insights
+
+1. **Weight matters**: Questions with higher weights have exponentially more impact on the final classification
+2. **Normalization prevents bias**: Scaling by weight totals ensures both categories contribute equally regardless of number of questions
+3. **Binary questions can be powerful**: The 2-answer "Have you had sex?" question with weight 5 can dramatically shift the personality score
+4. **Odd answer sets skip zero**: The recursive algorithm for odd answers intentionally avoids neutral (0) scores
+5. **Visual mapping drives formula**: The personality score negation is purely for correct visual representation on the chart

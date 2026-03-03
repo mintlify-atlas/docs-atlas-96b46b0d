@@ -1,0 +1,241 @@
+---
+title: How It Works
+description: Deep dive into the two-dimensional scoring system, question weighting, and result calculation algorithm behind The Incel Test.
+---
+
+## The Two-Dimensional Scoring System
+
+The Incel Test evaluates users on two independent axes:
+
+1. **Looks Axis** (X-axis): Physical attributes and appearance
+2. **Personality Axis** (Y-axis): Social behaviors and lifestyle choices
+
+This creates a 2D coordinate system that places users into one of four quadrants, each representing a different "archetype."
+
+<Note>
+  The scoring system is implemented in `/assets/scripts/questioner.js:29-121`
+</Note>
+
+## Question Categories
+
+The quiz contains **30 total questions** loaded from `questions.json`:
+
+### Looks Questions (14 total)
+
+Questions with `"isLooks": true` evaluate physical appearance:
+
+- Jawline and chin definition
+- Height (weight: 2)
+- Athletic build (weight: 2)
+- Shoulder-to-hip ratio
+- Facial acne
+- Beard presence
+- Dick length (weight: 2)
+- Hair quality
+- Body hair grooming
+- Facial symmetry
+- Hand size
+- Outfit expense
+- Shoe type
+
+### Personality Questions (16 total)
+
+Questions with `"isLooks": false` evaluate social and behavioral traits:
+
+- Anime watching habits (weight: 2)
+- Video game hours
+- Masturbation frequency
+- Vaping habits
+- Party frequency
+- College major
+- Fraternity membership
+- Pornography preferences (weight: 3)
+- Relationship history
+- **Sexual experience (weight: 5)** - The most important question
+- Knowledge of anime/internet culture (weight: 2)
+- 4chan awareness
+- Friend circle size
+
+<Info>
+  Question weights range from 1 to 5, with higher weights having more impact on the final score.
+</Info>
+
+## The Scoring Algorithm
+
+### Step 1: Answer Scoring
+
+When a user selects an answer, the `calcScore()` function (line 109-121) converts it to a normalized value:
+
+```javascript
+function calcScore(answer, options) {
+    n = options / 2;
+    if ((options % 2) != 0) {
+        // Handle odd number of answers by recursively treating as even
+        if (answer < ((options + 1) / 2)) {
+            return calcScore(answer, options + 1);
+        } else {
+            return calcScore(answer + 1, options + 1);
+        }
+    }
+    // Even number of answers: scale to -1 to +1 range
+    return ((answer - n) / n) * currentWeight;
+}
+```
+
+**How it works:**
+
+- For a question with 5 answers (indexed 0-4):
+  - Answer 0: Most "chad" → negative score
+  - Answer 2: Neutral → ~0 score  
+  - Answer 4: Most "beta" → positive score
+- The score is scaled by the question's weight
+- Odd-numbered answer sets are normalized to even for consistent scoring
+
+### Step 2: Accumulation
+
+Scores accumulate separately for looks and personality (line 51-59):
+
+```javascript
+var score = calcScore(answerId, numAnswers);
+if (isLooks) {
+    looks += score;
+} else {
+    personality += score;
+}
+```
+
+The system also tracks the total possible weight for each category:
+- `looksCount`: Sum of all looks question weights
+- `personalityCount`: Sum of all personality question weights
+
+### Step 3: Normalization
+
+After all questions are answered, the `finale()` function (line 123-191) normalizes scores to fit on a 253x253 pixel chart:
+
+```javascript
+// Scale scores to fit 253-pixel coordinate system
+var personalityFinal = -1 * personality * (253 / personalityCount)
+var looksFinal = looks * (253 / looksCount)
+```
+
+**Key points:**
+
+- Personality is inverted (`-1 *`) to map correctly on the Y-axis
+- Division by total weight normalizes to account for weighted questions
+- Multiplication by 253 scales to pixel coordinates for SVG chart positioning
+
+## Result Determination
+
+The final coordinates determine which quadrant the user lands in (line 138-189):
+
+```javascript
+if (personalityFinal <= 0 && looksFinal >= 0) {
+    // Beta Beta - worst quadrant
+    result = "You are Beta Beta"
+} else if (personalityFinal <= 0 && looksFinal <= 0) {
+    // Beta Chad - good looks, poor personality  
+    result = "You are Beta Chad"
+} else if (personalityFinal >= 0 && looksFinal >= 0) {
+    // Chad Beta - good personality, poor looks
+    result = "You are Chad Beta"  
+} else if (personalityFinal > 0 && looksFinal < 0) {
+    // Chad Chad - best quadrant
+    result = "You are Chad Chad"
+}
+```
+
+<Warning>
+  The coordinate system might seem counterintuitive: higher looks scores are actually "worse" (more beta), which is why looksFinal is not inverted but personalityFinal is.
+</Warning>
+
+## Weighted Questions Impact
+
+The weighting system creates significant impact differences:
+
+| Weight | Questions | Impact |
+|--------|-----------|--------|
+| 1 | 21 questions | Standard impact |
+| 2 | 6 questions | 2x impact (height, build, dick length, anime, etc.) |
+| 3 | 1 question | 3x impact (pornography preferences) |
+| 5 | 1 question | 5x impact (sexual experience) |
+
+**Example calculation:**
+
+If all personality questions are answered neutrally except "Have you ever had sex?" (weight 5):
+
+- Answering "No" adds +5 to personality score
+- Total personality weight ≈ 25
+- This single answer accounts for ~20% of personality score
+
+## Visual Representation
+
+The quiz displays results on an embedded SVG chart (`chad_chart.svg`) with four colored quadrants:
+
+- **Red quadrant** (top-left): Beta Beta
+- **Orange quadrant** (top-right): Beta Chad  
+- **Green quadrant** (bottom-right): Chad Chad
+- **Blue quadrant** (bottom-left): Chad Beta
+
+A dot is positioned at coordinates `(looksFinal, personalityFinal)` using SVG transforms:
+
+```javascript
+function moveDot(xOffset, yOffset) {
+    var dot = document.getElementById("pinpoint");
+    var transformAttr = ' translate(' + xOffset + ',' + yOffset + ')';
+    dot.setAttribute('transform', transformAttr);
+}
+```
+
+## Progress Tracking
+
+The quiz provides real-time feedback:
+
+1. **Progress bar**: Updates after each answer showing percentage complete
+2. **Answer history**: Displays previous answers in collapsible cards
+3. **Console logging**: Extensive logging for debugging (visible in browser DevTools)
+
+```javascript
+$("#progressbar").attr('aria-valuenow', questionNum + 1);
+$("#progressbar").attr('style', 'width: ' + (100 * (questionNum + 1) / questionList.length) + '%');
+```
+
+## Technical Stack
+
+The implementation uses:
+
+- **jQuery 3.3.1**: DOM manipulation and AJAX for loading questions
+- **Bootstrap 4.3.1**: UI components and responsive grid
+- **Vanilla JavaScript**: Core quiz logic
+- **JSON data**: Question storage in `assets/data/questions.json`
+- **SVG graphics**: Chart visualization
+
+<Info>
+  The entire quiz runs client-side with no backend required. Questions are loaded via `$.getJSON()` on page load.
+</Info>
+
+## Edge Cases
+
+### Perfect Neutrality
+
+If both scores equal exactly 0:
+
+```javascript
+if (personalityFinal == 0 && looksFinal == 0) {
+    $("#congrats-message-header").prop('innerHTML', "You are Jared Fogle.");
+}
+```
+
+This rare outcome triggers a special Easter egg result.
+
+### Odd Answer Counts
+
+Questions with odd numbers of answers (3 or 5 options) are handled recursively to maintain scoring consistency by treating them as if they had one additional phantom answer.
+
+## Question Loading Flow
+
+1. Document ready event fires (line 11)
+2. `$.getJSON()` loads `questions.json` (line 19)
+3. First question loads via `loadQuestion(0)` (line 24)
+4. Progress bar maximum set to total questions (line 25)
+5. User clicks answer → `logAnswer()` → `calcScore()` → `loadQuestion(next)`
+6. After final question → `finale()` → result display
